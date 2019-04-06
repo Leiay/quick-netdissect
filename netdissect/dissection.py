@@ -65,11 +65,17 @@ def dissect(outdir, model, dataset,
         netname = type(model).__name__
     with torch.no_grad():
         device = next(model.parameters()).device
+        print("PROGRESS: method dissect, after loading device")
         segloader = torch.utils.data.DataLoader(dataset,
                 batch_size=batch_size, num_workers=num_workers,
                 pin_memory=(device.type == 'cuda'))
+        print("PROGRESS: method dissect, after loading segloader")
+        print("VERBOSE: segloader: {}".format(segloader))
+
         quantiles, topk = collect_quantiles_and_topk(model, segloader,
                 recover_image=recover_image, k=examples_per_unit)
+        print("PROGRESS: method dissect, after collect_quantiles_and_topk")
+
         levels = {k: qc.quantiles([1.0 - quantile_threshold])[:,0]
                 for k, qc in quantiles.items()}
         quantiledata = (topk, quantiles, levels, quantile_threshold)
@@ -265,7 +271,7 @@ def generate_images(outdir, model, dataset, topk, levels,
     normalization function as recover_image.
     Limits each strip to the top row_length images.
     '''
-    progress = default_progress()
+    progress = default_progress(verbose=True)
     needed_images = {}
     if recover_image is None:
         recover_image = lambda x: x
@@ -372,7 +378,7 @@ def collect_quantiles_and_topk(model, segloader,
     quantiles = {}
     topks = {}
     device = next(model.parameters()).device
-    progress = default_progress()
+    progress = default_progress(verbose=True)
     for i, batch in enumerate(progress(segloader, desc='Quantiles')):
         # We don't actually care about the model output.
         model(batch[0].to(device))
@@ -438,7 +444,7 @@ def collect_bincounts(model, segloader, levels, recover_image=None):
     category_activation_counts = {}
     intersection_counts = {}
     label_counts = torch.zeros(num_labels, dtype=torch.long, device=device)
-    progress = default_progress()
+    progress = default_progress(verbose=True)
     scale_offset_map = getattr(model, 'scale_offset', None)
     upsample_grids = {}
     # total_batch_categories = torch.zeros(
