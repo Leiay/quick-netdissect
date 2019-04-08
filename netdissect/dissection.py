@@ -78,22 +78,32 @@ def dissect(outdir, model, dataset,
 
         levels = {k: qc.quantiles([1.0 - quantile_threshold])[:,0]
                 for k, qc in quantiles.items()}
+        print("VERBOSE: levels: {}".format(levels))
         quantiledata = (topk, quantiles, levels, quantile_threshold)
         if make_images:
+            print("VERBOSE: make_images: {}".format(make_images))
             generate_images(outdir, model, dataset, topk, levels, recover_image,
                     row_length=examples_per_unit, batch_size=batch_size,
                     single_images=make_single_images,
                     num_workers=num_workers)
         if make_labels:
+            print("VERBOSE: make_labels: {}".format(make_labels))
             if hasattr(recover_image, 'get_label_and_category_names'):
+                print("VERBOSE: hasattr")
                 labelnames, catnames = (
                         recover_image.get_label_and_category_names(dataset))
+                print("VERBOSE: labelnames: {}".format(labelnames))
+                print("VERBOSE: catnames: {}".format(catnames))
             else:
                 labelnames, catnames = broden_label_and_category_names(dataset)
+                print("VERBOSE: labelnames: {}".format(labelnames))
+                print("VERBOSE: catnames: {}".format(catnames))
             label_category = [catnames.index(c) for l, c in labelnames]
+            print("VERBOSE: label_category: {}".format(label_category))
             segloader = torch.utils.data.DataLoader(dataset,
                     batch_size=1, num_workers=num_workers,
                     pin_memory=(device.type == 'cuda'))
+            print("PROGRESS: method dissect, after torch.utils.data.DataLoader")
             lcs, ccs, ics = collect_bincounts(model, segloader, levels,
                     recover_image=recover_image)
             scores = {
@@ -278,10 +288,16 @@ def generate_images(outdir, model, dataset, topk, levels,
     # Pass 1: needed_images lists all images that are topk for some unit.
     for layer in topk:
         topresult = topk[layer].result()[1].cpu()
+        print("VERBOSE: topresult: {}".format(topresult))
         for unit, row in enumerate(topresult):
+            print("VERBOSE: unit: {}".format(unit))
+            print("VERBOSE: row: {}".format(row))
             for rank, imgnum in enumerate(row[:row_length]):
+                print("VERBOSE: rank: {}".format(rank))
                 imgnum = imgnum.item()
+                print("VERBOSE: imgnum: {}".format(imgnum))
                 if imgnum not in needed_images:
+                    print("VERBOSE: if imgnum not in needed_images")
                     needed_images[imgnum] = []
                 needed_images[imgnum].append((layer, unit, rank))
     levels = {k: v.cpu().numpy() for k, v in levels.items()}
